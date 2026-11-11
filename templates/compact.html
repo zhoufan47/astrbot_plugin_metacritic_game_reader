@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    width: 760px;
+    background: #f4f1ea;
+    font-family: "Songti SC", "SimSun", "Noto Serif CJK SC", Georgia,
+                 "PingFang SC", "Microsoft YaHei", serif;
+    color: #20201e;
+    -webkit-font-smoothing: antialiased;
+  }
+  .card { width: 760px; background: #fffdf8; padding: 30px 36px 26px; }
+
+  /* ---------- 报头 ---------- */
+  .masthead {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    border-bottom: 3px double #20201e;
+    padding-bottom: 10px; margin-bottom: 18px;
+  }
+  .mh-left { font-size: 12px; letter-spacing: 3px; color: #7a6a55; }
+  .mh-center { font-size: 22px; font-weight: 900; letter-spacing: 8px; }
+  .mh-right { font-size: 12px; color: #7a6a55; }
+
+  /* ---------- 标题区 ---------- */
+  .head {
+    display: flex; gap: 20px; align-items: flex-start;
+    border-bottom: 1px solid #d8d0bf; padding-bottom: 18px; margin-bottom: 16px;
+  }
+  .cover {
+    width: 120px; height: 170px; flex: 0 0 auto;
+    object-fit: cover; border: 1px solid #c9bfa9;
+    filter: grayscale(.15);
+  }
+  .cover-ph {
+    width: 120px; height: 170px; flex: 0 0 auto;
+    border: 1px solid #c9bfa9; background: #efe9dc;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: #9a8a70;
+  }
+  .head-text { flex: 1 1 auto; min-width: 0; }
+  .kicker {
+    font-size: 12px; letter-spacing: 2px; color: #a8342a;
+    font-weight: 700; margin-bottom: 8px;
+  }
+  .title {
+    font-size: 34px; line-height: 1.2; font-weight: 900;
+    word-break: break-word; margin-bottom: 10px;
+  }
+  .byline { font-size: 13px; color: #6b6152; line-height: 1.7; }
+  .byline .sep { color: #b9ad96; margin: 0 7px; }
+  .query { font-size: 12px; color: #9a8a70; margin-top: 8px; font-style: italic; }
+
+  /* ---------- 主视觉条 ---------- */
+  {% if game.hero_url %}
+  .hero-strip {
+    width: 100%; height: 150px; object-fit: cover;
+    border: 1px solid #d8d0bf; margin-bottom: 16px;
+    filter: grayscale(.25) contrast(1.05);
+  }
+  {% endif %}
+  .desc {
+    font-size: 13px; color: #5c5344; line-height: 1.8;
+    padding: 10px 0 14px; margin-bottom: 6px;
+    border-bottom: 1px solid #e3dccd;
+  }
+  .desc::first-letter { font-size: 26px; font-weight: 900; color: #a8342a; }
+
+  /* ---------- 平台：双栏报纸排版 ---------- */
+  .cols {
+    column-count: 2; column-gap: 24px;
+    column-rule: 1px solid #e3dccd;
+    margin-top: 14px;
+  }
+  .platform {
+    break-inside: avoid;
+    padding: 10px 0 12px;
+    border-bottom: 1px solid #e3dccd;
+    margin-bottom: 4px;
+  }
+  .p-name {
+    font-size: 15px; font-weight: 900; letter-spacing: 1px;
+    border-left: 4px solid #a8342a; padding-left: 8px;
+    margin-bottom: 8px;
+  }
+  .p-name .tmpl-badge { float: right; font-size: 9px; color: #b9ad96; font-weight: 400; letter-spacing: 0; }
+  .scores {
+    display: flex; gap: 8px; margin-bottom: 8px;
+  }
+  .sc {
+    flex: 1 1 0; text-align: center;
+    background: #f4efe3; border: 1px solid #e0d6c2; padding: 6px 4px;
+  }
+  .sc-num { font-size: 24px; font-weight: 900; line-height: 1.1; }
+  .sc-good .sc-num { color: #1e7a45; }
+  .sc-mid  .sc-num { color: #b07d10; }
+  .sc-bad  .sc-num { color: #b02a2a; }
+  .sc-none .sc-num { color: #999; }
+  .sc-user.sc-good .sc-num { color: #1f5fa8; }
+  .sc-user.sc-mid  .sc-num { color: #6b4bb0; }
+  .sc-user.sc-bad  .sc-num { color: #a8342a; }
+  .sc-label { font-size: 10px; color: #7a6a55; margin-top: 2px; }
+  .sc-sub { font-size: 10px; color: #8a7c66; margin-top: 2px; }
+
+  .review { padding: 5px 0; border-top: 1px dotted #d8d0bf; }
+  .review:first-of-type { border-top: none; }
+  .rv-line { font-size: 11px; line-height: 1.55; color: #4c463b; }
+  .rv-score { font-weight: 900; color: #a8342a; margin-right: 5px; }
+  .rv-pub { font-weight: 700; }
+  .rv-date { color: #9a8a70; }
+  .rv-quote { color: #6b6152; }
+  .rv-empty { font-size: 11px; color: #9a8a70; }
+
+  .footer {
+    border-top: 3px double #20201e; margin-top: 18px; padding-top: 8px;
+    font-size: 11px; color: #8a7c66;
+    display: flex; justify-content: space-between;
+  }
+  .no-score { font-size: 13px; color: #8a7c66; padding: 18px 0; }
+</style>
+</head>
+<body>
+<div class="card">
+
+  <div class="masthead">
+    <div class="mh-left">METACRITIC 游戏评鉴</div>
+    <div class="mh-center">评分速览</div>
+    <div class="mh-right">{{ template_name }} · PC / PS5 / NS2 / XSX</div>
+  </div>
+
+  <div class="head">
+    {% if game.cover_url %}
+    <img class="cover" src="{{ game.cover_url }}" />
+    {% else %}
+    <div class="cover-ph">NO COVER</div>
+    {% endif %}
+    <div class="head-text">
+      <div class="kicker">◆ 多平台评分报告</div>
+      <div class="title">{{ game.title }}</div>
+      <div class="byline">
+        {% if game.release_date %}发行 {{ game.release_date }}{% endif %}
+        {% if game.developer %}<span class="sep">|</span>开发 {{ game.developer }}{% endif %}
+        {% if game.publisher %}<span class="sep">|</span>发行 {{ game.publisher }}{% endif %}
+        {% if game.genres %}<span class="sep">|</span>{{ game.genres | join(" / ") }}{% endif %}
+      </div>
+      <div class="query">检索词：{{ game.query }}</div>
+    </div>
+  </div>
+
+  {% if game.hero_url %}<img class="hero-strip" src="{{ game.hero_url }}" />{% endif %}
+
+  {% if game.description %}<div class="desc">{{ game.description }}</div>{% endif %}
+
+  {% if game.platforms %}
+  <div class="cols">
+    {% for p in game.platforms %}
+    <div class="platform">
+      <div class="p-name">{{ p.name }}<span class="tmpl-badge">{{ template_name }}</span></div>
+      <div class="scores">
+        <div class="sc {% if p.critic_score is not none %}{% if p.critic_score >= 75 %}sc-good{% elif p.critic_score >= 50 %}sc-mid{% else %}sc-bad{% endif %}{% else %}sc-none{% endif %}">
+          <div class="sc-num">{{ p.critic_score if p.critic_score is not none else '–' }}</div>
+          <div class="sc-label">媒体评分</div>
+          <div class="sc-sub">{{ p.critic_review_count if p.critic_review_count is not none else '—' }} 篇评测</div>
+        </div>
+        <div class="sc sc-user {% if p.user_score is not none %}{% if p.user_score >= 7.5 %}sc-good{% elif p.user_score >= 5 %}sc-mid{% else %}sc-bad{% endif %}{% else %}sc-none{% endif %}">
+          <div class="sc-num">{{ p.user_score if p.user_score is not none else '–' }}</div>
+          <div class="sc-label">用户评分</div>
+          <div class="sc-sub">{{ p.user_review_count if p.user_review_count is not none else '—' }} 条评分</div>
+        </div>
+      </div>
+      {% if p.reviews %}
+        {% for r in p.reviews %}
+        <div class="review">
+          <div class="rv-line">
+            <span class="rv-score">{{ r.score_text }}</span>
+            <span class="rv-pub">{{ r.publication }}</span>
+            {% if r.date %}<span class="rv-date">· {{ r.date }}</span>{% endif %}
+            <span class="rv-quote">— {{ r.quote }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="rv-empty">该平台暂无可用媒体评测。</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="no-score">未找到 PC / PS5 / NS2 / XSX 平台的评分数据。</div>
+  {% endif %}
+
+  <div class="footer">
+    <span>资料来源：Metacritic（metacritic.com）· 媒体评测节选 {{ quote_chars }} 字</span>
+    <span>{{ game.source_url }}</span>
+  </div>
+</div>
+</body>
+</html>

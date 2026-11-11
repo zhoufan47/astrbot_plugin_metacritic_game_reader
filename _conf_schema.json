@@ -1,0 +1,51 @@
+{
+  "template": {
+    "description": "渲染图片所使用的 HTML 模板（可在 templates/ 目录放入自定义 .html 模板）",
+    "type": "string",
+    "default": "classic",
+    "options": ["classic", "neon", "compact"],
+    "labels": ["经典卡片（默认）", "霓虹赛博", "报纸杂志"],
+    "subtitles": [
+      "浅色分区卡片，蓝色主视觉 + 封面",
+      "深色科技风，青紫霓虹配色",
+      "双栏紧凑排版，信息密度最高"
+    ],
+    "hint": "也可用 /评分模板 <名称> 临时切换；自定义模板放入插件 templates/ 目录后重载插件即可选择。"
+  },
+  "use_llm": {
+    "description": "使用会话大模型智能识别游戏名称（把中文俗称/别名/错拼规范化为英文官方名）",
+    "type": "bool",
+    "default": true,
+    "hint": "关闭后仅使用内置中文别名表与英文原名搜索。需要 AstrBot 已配置聊天模型提供商。"
+  },
+  "max_reviews": {
+    "description": "每个平台展示的媒体评测数量（前 N 篇）",
+    "type": "int",
+    "default": 5,
+    "slider": {
+      "min": 1,
+      "max": 10,
+      "step": 1
+    }
+  },
+  "review_quote_chars": {
+    "description": "每篇媒体评测节选的字数（前 N 字）",
+    "type": "int",
+    "default": 100,
+    "slider": {
+      "min": 30,
+      "max": 300,
+      "step": 10
+    }
+  },
+  "request_timeout": {
+    "description": "Metacritic 单次 HTTP 请求超时（秒）",
+    "type": "int",
+    "default": 20,
+    "slider": {
+      "min": 5,
+      "max": 60,
+      "step": 5
+    }
+  }
+}
