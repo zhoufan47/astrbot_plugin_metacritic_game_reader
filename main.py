@@ -550,7 +550,7 @@ class MetacriticGameReader(Star):
             options = {
                 "full_page": True,
                 "type": "jpeg",
-                "quality": 85,
+                "quality": 92,
                 "timeout": 45000,
                 "scale": "css",
             }
