@@ -57,6 +57,7 @@
 | `classic` | 浅色卡片式，蓝色主视觉 + 封面，分区清晰（默认） |
 | `neon` | 深色赛博/霓虹风，青紫配色，科技感标签 |
 | `compact` | 报纸杂志风，双栏紧凑排版，信息密度最高 |
+| `glass` | 通透玻璃风，半透明悬浮面板，背景模糊、微亮边缘与轻柔阴影 |
 
 **自定义模板**：把一个 `xxx.html` 放进插件的 `templates/` 目录，重载插件后即可
 用 `/评分模板 xxx` 或（把它加进配置下拉框后）在 WebUI 里选择。模板使用
@@ -122,6 +123,7 @@ templates/             独立的 .html 模板文件
   ├─ classic.html      经典卡片（默认）
   ├─ neon.html         霓虹赛博
   ├─ compact.html      报纸杂志
+  ├─ glass.html        通透玻璃
   └─ README.md         自定义模板与可用变量说明
 _conf_schema.json      AstrBot 插件配置 Schema
 metadata.yaml          插件元数据

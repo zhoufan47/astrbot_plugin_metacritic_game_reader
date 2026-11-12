@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    /* 简洁通透背景：柔和渐变 + 几团低饱和色晕，给玻璃面板提供可模糊的底色 */
+    width: 900px;
+    min-height: 100%;
+    background:
+      radial-gradient(520px 380px at 8% 4%,  rgba(129,140,248,.34), transparent 70%),
+      radial-gradient(560px 420px at 94% 16%, rgba(56,189,248,.30), transparent 72%),
+      radial-gradient(520px 420px at 14% 74%, rgba(167,139,250,.26), transparent 72%),
+      radial-gradient(480px 380px at 88% 92%, rgba(52,211,153,.22), transparent 72%),
+      linear-gradient(145deg, #eef3fc 0%, #f7f2fb 52%, #eaf7f4 100%);
+    font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC",
+                 "Helvetica Neue", Arial, sans-serif;
+    color: #18233b;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { position: relative; width: 900px; padding: 30px 34px 34px; }
+
+  /* 顶层装饰层：轻微模糊的主视觉 + 光斑，玻璃控件会把它「磨砂」化 */
+  .art {
+    position: absolute; left: 0; top: 0; width: 900px; height: 100%;
+    overflow: hidden; z-index: 0; pointer-events: none;
+  }
+  {% if game.hero_url %}
+  .art-img {
+    position: absolute; left: 90px; top: -40px; width: 760px; height: 430px;
+    object-fit: cover; opacity: .22;
+    -webkit-filter: blur(42px) saturate(1.25);
+    filter: blur(42px) saturate(1.25);
+    -webkit-mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+    mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+  }
+  {% endif %}
+  .orb {
+    position: absolute; border-radius: 50%;
+    -webkit-filter: blur(30px); filter: blur(30px); opacity: .5;
+  }
+  .o1 { width: 240px; height: 240px; left: -60px; top: 260px;
+        background: radial-gradient(circle, rgba(99,102,241,.55), transparent 70%); }
+  .o2 { width: 260px; height: 260px; right: -70px; top: 520px;
+        background: radial-gradient(circle, rgba(56,189,248,.5), transparent 70%); }
+  .o3 { width: 220px; height: 220px; left: 320px; top: 980px;
+        background: radial-gradient(circle, rgba(244,114,182,.4), transparent 70%); }
+
+  .content { position: relative; z-index: 1; }
+
+  /* ---------- 通用玻璃质感 ---------- */
+  .glass {
+    background: rgba(255, 255, 255, .55);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
+    backdrop-filter: blur(18px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, .8);
+    box-shadow:
+      0 12px 34px rgba(30, 45, 90, .12),
+      0 2px 8px rgba(30, 45, 90, .05),
+      inset 0 1px 0 rgba(255, 255, 255, .92);
+    border-radius: 22px;
+  }
+
+  /* ---------- 顶部条 ---------- */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 11px 18px; margin-bottom: 18px; border-radius: 16px;
+  }
+  .brand {
+    font-size: 12px; font-weight: 800; letter-spacing: 2.5px;
+    color: #3b4a6b;
+  }
+  .brand .dot { color: #6366f1; }
+  .tmpl {
+    font-size: 11px; font-weight: 700; letter-spacing: .5px;
+    color: #4f5d7d;
+    background: rgba(255,255,255,.65);
+    border: 1px solid rgba(255,255,255,.9);
+    padding: 5px 12px; border-radius: 999px;
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    box-shadow: 0 2px 8px rgba(30,45,90,.08);
+  }
+
+  /* ---------- 主视觉玻璃面板 ---------- */
+  .hero {
+    display: flex; align-items: center; gap: 26px;
+    padding: 26px 28px; margin-bottom: 20px;
+    border-radius: 26px;
+  }
+  .cover {
+    width: 158px; height: 224px; flex: 0 0 auto;
+    border-radius: 16px; object-fit: cover;
+    border: 2px solid rgba(255,255,255,.9);
+    box-shadow: 0 12px 30px rgba(24,35,59,.28), 0 0 0 1px rgba(255,255,255,.45);
+  }
+  .cover-ph {
+    width: 158px; height: 224px; flex: 0 0 auto;
+    border-radius: 16px;
+    background: rgba(255,255,255,.35);
+    border: 2px solid rgba(255,255,255,.9);
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    display: flex; align-items: center; justify-content: center;
+    color: #63708c; font-size: 14px;
+  }
+  .hero-text { flex: 1 1 auto; min-width: 0; }
+  .kicker {
+    display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 2px;
+    color: #4338ca; background: rgba(238,242,255,.75);
+    border: 1px solid rgba(255,255,255,.9);
+    padding: 5px 11px; border-radius: 999px; margin-bottom: 12px;
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  }
+  .title {
+    font-size: 38px; line-height: 1.16; font-weight: 800;
+    color: #131d33; word-break: break-word; margin-bottom: 10px;
+    text-shadow: 0 1px 0 rgba(255,255,255,.7);
+  }
+  .meta { font-size: 14px; line-height: 1.75; color: #3e4b66; font-weight: 600; }
+  .meta .sep { color: #8a97b5; margin: 0 8px; }
+  .query {
+    display: inline-block; margin-top: 12px;
+    font-size: 12px; color: #4b5876;
+    background: rgba(255,255,255,.55);
+    border: 1px solid rgba(255,255,255,.85);
+    padding: 5px 12px; border-radius: 999px;
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  }
+
+  /* ---------- 简介：浅色实面，正文对比最清晰 ---------- */
+  .desc {
+    font-size: 14px; line-height: 1.8; color: #2c3852; font-weight: 500;
+    background: rgba(255,255,255,.72);
+    border: 1px solid rgba(255,255,255,.9);
+    border-left: 4px solid rgba(99,102,241,.65);
+    border-radius: 14px; padding: 13px 17px; margin-bottom: 24px;
+    box-shadow: 0 6px 18px rgba(30,45,90,.07);
+  }
+  .section {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 0 2px 16px;
+  }
+  .section h2 {
+    font-size: 19px; font-weight: 800; color: #16223c;
+    letter-spacing: .5px;
+  }
+  .section h2::before {
+    content: ""; display: inline-block; vertical-align: middle;
+    width: 5px; height: 18px; border-radius: 4px; margin-right: 10px;
+    background: linear-gradient(180deg, #6366f1, #38bdf8);
+    box-shadow: 0 2px 8px rgba(99,102,241,.4);
+  }
+  .section .hint { font-size: 12px; color: #5b6885; font-weight: 600; }
+
+  /* ---------- 平台玻璃面板 ---------- */
+  .platform { padding: 18px 20px; margin-bottom: 18px; border-radius: 20px; }
+  .p-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 12px; margin-bottom: 14px;
+    border-bottom: 1px solid rgba(255,255,255,.85);
+  }
+  .p-name { font-size: 18px; font-weight: 800; color: #131d33; }
+  .p-name .badge {
+    font-size: 10px; font-weight: 800; letter-spacing: 1px;
+    color: #4338ca; background: rgba(238,242,255,.8);
+    border: 1px solid rgba(255,255,255,.95);
+    padding: 3px 9px; border-radius: 999px; margin-left: 9px;
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  }
+
+  /* 玻璃效果集中在控件：两块评分控件 */
+  .stats { display: flex; gap: 14px; }
+  .stat {
+    flex: 1 1 0;
+    display: flex; align-items: center; gap: 13px;
+    padding: 13px 15px; border-radius: 16px;
+    background: rgba(255,255,255,.42);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    backdrop-filter: blur(14px) saturate(160%);
+    border: 1px solid rgba(255,255,255,.9);
+    box-shadow: 0 8px 22px rgba(30,45,90,.10), inset 0 1px 0 rgba(255,255,255,.95);
+  }
+  .score-box {
+    width: 60px; height: 60px; flex: 0 0 auto;
+    border-radius: 15px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 25px; font-weight: 800;
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,.75);
+    box-shadow: 0 6px 16px rgba(30,45,90,.14), inset 0 1px 0 rgba(255,255,255,.85);
+    text-shadow: 0 1px 2px rgba(255,255,255,.6);
+  }
+  /* 媒体评分：绿 / 琥珀 / 红 */
+  .sc-good { background: rgba(34,197,94,.34); color: #0d6b34; }
+  .sc-mid  { background: rgba(245,158,11,.34); color: #8a5200; }
+  .sc-bad  { background: rgba(239,68,68,.32); color: #991b1b; }
+  .sc-none { background: rgba(148,163,184,.30); color: #475569; }
+  /* 用户评分：蓝 / 紫 / 玫红 */
+  .score-user.sc-good { background: rgba(56,189,248,.36); color: #075985; }
+  .score-user.sc-mid  { background: rgba(167,139,250,.36); color: #5b21b6; }
+  .score-user.sc-bad  { background: rgba(244,114,182,.34); color: #9d174d; }
+  .stat-label { font-size: 11px; font-weight: 700; color: #5a6784; letter-spacing: .5px; margin-bottom: 4px; }
+  .stat-value { font-size: 15px; font-weight: 800; color: #1c2842; }
+  .stat-sub { font-size: 11px; color: #5f6c88; margin-top: 4px; }
+
+  /* ---------- 媒体评测控件 ---------- */
+  .reviews { margin-top: 14px; }
+  .rv-title {
+    font-size: 11px; font-weight: 800; letter-spacing: 1px;
+    color: #5a6784; margin-bottom: 8px;
+  }
+  .review {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 9px 12px; margin-bottom: 7px;
+    border-radius: 13px;
+    background: rgba(255,255,255,.38);
+    border: 1px solid rgba(255,255,255,.78);
+    -webkit-backdrop-filter: blur(9px); backdrop-filter: blur(9px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+  }
+  .rv-score {
+    width: 40px; height: 40px; flex: 0 0 auto;
+    border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 800;
+    border: 1px solid rgba(255,255,255,.8);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    box-shadow: 0 4px 10px rgba(30,45,90,.10);
+  }
+  .rv-body { flex: 1 1 auto; min-width: 0; }
+  .rv-pub { font-size: 13px; font-weight: 800; color: #25314c; margin-bottom: 3px; }
+  .rv-quote { font-size: 13px; line-height: 1.6; color: #3c4761; word-break: break-word; }
+  .rv-empty { font-size: 12px; color: #6b7893; padding: 8px 0; }
+
+  /* ---------- 页脚玻璃条 ---------- */
+  .footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 13px 20px; margin-top: 4px; border-radius: 16px;
+    font-size: 11px; color: #4f5d7d; font-weight: 600;
+  }
+  .footer strong { color: #4338ca; }
+  .no-score { text-align: center; padding: 26px; font-size: 14px; color: #4f5d7d; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 装饰层：模糊主视觉 + 色晕，供玻璃面板 backdrop-filter 磨砂 -->
+  <div class="art">
+    {% if game.hero_url %}<img class="art-img" src="{{ game.hero_url }}" />{% endif %}
+    <div class="orb o1"></div>
+    <div class="orb o2"></div>
+    <div class="orb o3"></div>
+  </div>
+
+  <div class="content">
+
+    <div class="topbar glass">
+      <div class="brand">METACRITIC <span class="dot">◆</span> 游戏评分</div>
+      <div class="tmpl">{{ template_name }} · GLASS</div>
+    </div>
+
+    <!-- 主视觉玻璃面板 -->
+    <div class="hero glass">
+      {% if game.cover_url %}
+      <img class="cover" src="{{ game.cover_url }}" />
+      {% else %}
+      <div class="cover-ph">No Cover</div>
+      {% endif %}
+      <div class="hero-text">
+        <div class="kicker">MULTI-PLATFORM SCORE REPORT</div>
+        <div class="title">{{ game.title }}</div>
+        <div class="meta">
+          {% if game.release_date %}<span>发行 {{ game.release_date }}</span>{% endif %}
+          {% if game.developer %}<span class="sep">/</span><span>开发 {{ game.developer }}</span>{% endif %}
+          {% if game.publisher %}<span class="sep">/</span><span>发行 {{ game.publisher }}</span>{% endif %}
+          {% if game.genres %}<span class="sep">/</span><span>{{ game.genres | join(" · ") }}</span>{% endif %}
+        </div>
+        <div class="query">识别自：{{ game.query }}</div>
+      </div>
+    </div>
+
+    {% if game.description %}<div class="desc">{{ game.description }}</div>{% endif %}
+
+    <div class="section">
+      <h2>平台评分对比</h2>
+      <div class="hint">PC / PS5 / NS2 / XSX · 仅目标平台</div>
+    </div>
+
+    {% if game.platforms %}
+      {% for p in game.platforms %}
+      <div class="platform glass">
+        <div class="p-head">
+          <div class="p-name">{{ p.name }}<span class="badge">PLATFORM</span></div>
+        </div>
+
+        <div class="stats">
+          <div class="stat">
+            {% if p.critic_score is not none %}
+              {% if p.critic_score >= 75 %}{% set cc = 'sc-good' %}
+              {% elif p.critic_score >= 50 %}{% set cc = 'sc-mid' %}
+              {% else %}{% set cc = 'sc-bad' %}{% endif %}
+            {% else %}{% set cc = 'sc-none' %}{% endif %}
+            <div class="score-box {{ cc }}">{{ p.critic_score if p.critic_score is not none else '–' }}</div>
+            <div>
+              <div class="stat-label">媒体评分 / METASCORE</div>
+              <div class="stat-value">
+                {{ p.critic_score if p.critic_score is not none else '暂无' }}
+                {% if p.critic_sentiment %} · {{ p.critic_sentiment }}{% endif %}
+              </div>
+              <div class="stat-sub">媒体评测数量：{{ p.critic_review_count if p.critic_review_count is not none else '—' }} 篇</div>
+            </div>
+          </div>
+
+          <div class="stat">
+            {% if p.user_score is not none %}
+              {% if p.user_score >= 7.5 %}{% set uc = 'sc-good' %}
+              {% elif p.user_score >= 5 %}{% set uc = 'sc-mid' %}
+              {% else %}{% set uc = 'sc-bad' %}{% endif %}
+            {% else %}{% set uc = 'sc-none' %}{% endif %}
+            <div class="score-box score-user {{ uc }}">{{ p.user_score if p.user_score is not none else '–' }}</div>
+            <div>
+              <div class="stat-label">用户评分 / USER SCORE</div>
+              <div class="stat-value">
+                {{ p.user_score if p.user_score is not none else '暂无' }}
+                {% if p.user_sentiment %} · {{ p.user_sentiment }}{% endif %}
+              </div>
+              <div class="stat-sub">用户评分数量：{{ p.user_review_count if p.user_review_count is not none else '—' }} 条</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="reviews">
+          <div class="rv-title">前 {{ p.reviews | length }} 篇媒体评测 · 节选 {{ quote_chars }} 字</div>
+          {% if p.reviews %}
+            {% for r in p.reviews %}
+            <div class="review">
+              {% if r.score is not none %}
+                {% if r.score >= 75 %}{% set rc = 'sc-good' %}
+                {% elif r.score >= 50 %}{% set rc = 'sc-mid' %}
+                {% else %}{% set rc = 'sc-bad' %}{% endif %}
+              {% else %}{% set rc = 'sc-none' %}{% endif %}
+              <div class="rv-score {{ rc }}">{{ r.score_text }}</div>
+              <div class="rv-body">
+                <div class="rv-pub">{{ r.publication }}{% if r.date %} · {{ r.date }}{% endif %}</div>
+                <div class="rv-quote">{{ r.quote }}</div>
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="rv-empty">该平台暂无可用媒体评测。</div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="no-score glass">未找到 PC / PS5 / NS2 / XSX 平台的评分数据。</div>
+    {% endif %}
+
+    <div class="footer glass">
+      <span>数据来源：<strong>Metacritic</strong>（metacritic.com）</span>
+      <span>{{ game.source_url }}</span>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

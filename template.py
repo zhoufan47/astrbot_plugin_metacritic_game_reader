@@ -31,6 +31,7 @@ BUILTIN_LABELS: dict[str, str] = {
     "classic": "经典卡片 · 浅色分区，蓝色主视觉（默认）",
     "neon": "霓虹赛博 · 深色科技风，青紫配色",
     "compact": "报纸杂志 · 双栏紧凑排版，信息密度高",
+    "glass": "通透玻璃 · 半透明悬浮面板，背景模糊与微亮边缘",
 }
 
 DEFAULT_TEMPLATE = "classic"
