@@ -84,6 +84,11 @@
     font-size: 15px; font-weight: 900; letter-spacing: 1px;
     border-left: 4px solid #a8342a; padding-left: 8px;
     margin-bottom: 8px;
+    display: flex; align-items: center;
+  }
+  /* 官方 iconify CSS mask 已自动注入；墨色 logo，字号略小 */
+  .p-icon {
+    font-size: 16px; margin-right: 7px; flex: 0 0 auto;
   }
   .p-name .tmpl-badge { float: right; font-size: 9px; color: #b9ad96; font-weight: 400; letter-spacing: 0; }
   .scores {
@@ -157,7 +162,7 @@
   <div class="cols">
     {% for p in game.platforms %}
     <div class="platform">
-      <div class="p-name">{{ p.name }}<span class="tmpl-badge">{{ template_name }}</span></div>
+      <div class="p-name">{% if p.icon_class %}<span class="p-icon iconify {{ p.icon_class }}" style="color:{{ p.icon_color }}"></span>{% endif %}{{ p.name }}<span class="tmpl-badge">{{ template_name }}</span></div>
       <div class="scores">
         <div class="sc {% if p.critic_score is not none %}{% if p.critic_score >= 75 %}sc-good{% elif p.critic_score >= 50 %}sc-mid{% else %}sc-bad{% endif %}{% else %}sc-none{% endif %}">
           <div class="sc-num">{{ p.critic_score if p.critic_score is not none else '–' }}</div>

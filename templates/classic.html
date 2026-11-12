@@ -119,7 +119,10 @@
     border-bottom: 1px dashed #e3e9f2;
     padding-bottom: 12px; margin-bottom: 14px;
   }
-  .p-name { font-size: 18px; font-weight: 800; color: #16233a; }
+  .p-name { font-size: 18px; font-weight: 800; color: #16233a; display: flex; align-items: center; }
+  /* 官方 iconify CSS mask 已由 template.py 自动注入；
+     这里只控制大小（font-size 决定 1em 高度）与间距，颜色用 color */
+  .p-icon { font-size: 22px; margin-right: 10px; flex: 0 0 auto; }
   .p-name .badge {
     display: inline-block; vertical-align: middle;
     font-size: 11px; font-weight: 700; color: #fff;
@@ -228,7 +231,7 @@
       {% for p in game.platforms %}
       <div class="platform">
         <div class="p-head">
-          <div class="p-name">{{ p.name }}<span class="badge">PLATFORM</span></div>
+          <div class="p-name">{% if p.icon_class %}<span class="p-icon iconify {{ p.icon_class }}" style="color:{{ p.icon_color }}"></span>{% endif %}{{ p.name }}<span class="badge">PLATFORM</span></div>
         </div>
 
         <div class="p-stats">

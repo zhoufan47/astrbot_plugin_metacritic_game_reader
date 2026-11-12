@@ -169,8 +169,8 @@ register = _register_star or _identity_decorator
 @register(
     "astrbot_plugin_metacritic_game_reader",
     "zhoufan",
-    "Metacritic 游戏评分查询：智能识别游戏名，抓取 PC/PS5/NS2/XSX 多平台评分，支持多套可切换 HTML 模板渲染成图片",
-    "1.1.0",
+    "Metacritic 游戏评分查询：智能识别游戏名，抓取 PC/PS5/NS2/XSX 多平台评分，用官方 iconify CSS mask 渲染平台 Logo，支持多套可切换 HTML 模板渲染成图片",
+    "1.2.1",
 )
 class MetacriticGameReader(Star):
     """Metacritic 游戏评分查询插件。
@@ -455,12 +455,13 @@ class MetacriticGameReader(Star):
                 yield event.plain_result(self._text_fallback(game, method))
                 return
 
-            summary = (
-                f"《{game.title}》 · 识别方式：{method} · "
-                f"平台：{game.platform_names} · 模板：{template_name}"
-            )
+            # summary = (
+            #     f"《{game.title}》 · 识别方式：{method} · "
+            #     f"平台：{game.platform_names} · 模板：{template_name}"
+            # )
             yield event.image_result(url)
-            yield event.plain_result(summary + f"\n{game.source_url}")
+            ## 仅调试用
+            # yield event.plain_result(summary + f"\n{game.source_url}")
 
     @staticmethod
     def _text_fallback(game: GameInfo, method: str) -> str:

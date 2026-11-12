@@ -109,7 +109,12 @@
     padding-bottom: 12px; margin-bottom: 14px;
     border-bottom: 1px dashed rgba(90,120,220,.25);
   }
-  .p-name { font-size: 18px; font-weight: 800; color: #fff; letter-spacing: 1px; }
+  .p-name { font-size: 18px; font-weight: 800; color: #fff; letter-spacing: 1px; display: flex; align-items: center; }
+  /* 官方 iconify CSS mask 已自动注入；白色 logo + 霓虹光晕 */
+  .p-icon {
+    font-size: 22px; margin-right: 10px; flex: 0 0 auto;
+    filter: drop-shadow(0 0 8px rgba(0,240,255,.55));
+  }
   .p-name .badge {
     font-size: 10px; font-weight: 700; color: #00f0ff;
     border: 1px solid rgba(0,240,255,.4);
@@ -205,7 +210,7 @@
       {% for p in game.platforms %}
       <div class="platform">
         <div class="p-head">
-          <div class="p-name">{{ p.name }}<span class="badge">NODE</span></div>
+          <div class="p-name">{% if p.icon_class %}<span class="p-icon iconify {{ p.icon_class }}" style="color:{{ p.icon_color }}"></span>{% endif %}{{ p.name }}<span class="badge">NODE</span></div>
         </div>
         <div class="p-stats">
           <div class="stat">

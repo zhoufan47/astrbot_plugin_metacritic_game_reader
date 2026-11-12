@@ -11,6 +11,12 @@
   缩写、错拼规范化成 Metacritic 的英文官方名（如「老头环」→ `Elden Ring`、
   「黑神话悟空」→ `Black Myth: Wukong`）；模型不可用时自动降级到内置中文别名表
   和英文原名搜索。
+- 🏷️ **官方平台 Logo**：完全沿用 Metacritic 页面的渲染方式 —— 通过站点自带的
+  Iconify `mc-platform` 私有图标集，用 `<span class="iconify i-mc-platform:pclogo-bold">`
+  配合 **CSS mask + `background-color:currentColor`** 上色。共 18 个 logo
+  （PC / PS5 / NS2 / XSX / PS4 / Xbox One / Switch / PS3 / Xbox 360，各含
+  regular 与 bold），规则由 `platform_icons.py` 离线生成并自动注入模板，
+  按模板主题配色（浅色用品牌色、深色用白色、报纸用墨色），不依赖外部网络。
 - 🎮 **多平台评分**：只抓取并展示 `PC`、`PlayStation 5`、`Nintendo Switch 2`、
   `Xbox Series X` 四个平台（按此优先级排序），其余平台（PS4 / Xbox One / Switch 等）
   一律忽略。每个平台各自包含：
@@ -106,6 +112,14 @@ Metacritic 官网是 Nuxt 应用，页面数据来自其公开 JSON 后端
 - 图片 URL 由 `images[].bucketPath` 拼成
   `https://www.metacritic.com/a/img/catalog` + `bucketPath`；
   `mainImage` 为主视觉，`cardImage` 为封面。
+- **平台 Logo**：`mc-platform` 是 Metacritic 私有的 Iconify 图标集，公共
+  `api.iconify.design` 返回 404；站点自身的 Nuxt Icon 接口
+  `https://www.metacritic.com/api/_nuxt_icon/mc-platform.json?icons=...` 返回完整 18 个图标
+  （`fill="currentColor"` 单色）。页面本身用 UnoCSS preset-icons 生成
+  `:where(.i-mc-platform\:xxx){...mask...--svg:url(...)}` 规则，配合
+  `<span class="iconify i-mc-platform:xxx">` 渲染。本插件把这些 SVG 离线打包进
+  `platform_icons.py`，用 `iconify_css()` 复刻同样的 CSS mask 规则并自动注入模板，
+  避免远端截图时的跨域/加载时序问题。
 
 参考/灵感来源（均为只读调研，未复用其代码）：
 
@@ -118,6 +132,7 @@ Metacritic 官网是 Nuxt 应用，页面数据来自其公开 JSON 后端
 ```
 main.py                插件入口：指令、智能识别、模板选择、t2i 渲染与消息发送
 metacritic_client.py   Metacritic 异步数据抓取客户端
+platform_icons.py      Metacritic 官方 mc-platform 平台 logo（18 个内联 SVG + 配色）
 template.py            HTML 模板加载器（发现/读取/校验）与模板数据组装
 templates/             独立的 .html 模板文件
   ├─ classic.html      经典卡片（默认）

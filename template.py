@@ -20,8 +20,22 @@ from typing import Any
 
 try:
     from .metacritic_client import GameInfo
+    from .platform_icons import (
+        PLATFORM_COLORS,
+        iconify_css,
+        platform_icon,
+        platform_icon_map,
+        platform_iconify_class,
+    )
 except ImportError:  # 顶层导入兜底
     from metacritic_client import GameInfo  # type: ignore[no-redef]
+    from platform_icons import (  # type: ignore[no-redef]
+        PLATFORM_COLORS,
+        iconify_css,
+        platform_icon,
+        platform_icon_map,
+        platform_iconify_class,
+    )
 
 # 模板目录与本文件同目录
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
@@ -129,9 +143,29 @@ def resolve_template_name(name: str | None) -> str:
     return DEFAULT_TEMPLATE
 
 
+def _inject_iconify_css(text: str) -> str:
+    """把官方同款 iconify mask CSS 注入模板。
+
+    默认自动注入，因此模板里只要写
+    ``<span class="iconify i-mc-platform:pclogo-bold"></span>`` 即可，
+    无需关心 CSS 从哪来。若模板已显式使用 ``{{ iconify_css }}`` 变量
+    （自定义模板想自己控制位置），则不重复注入。
+    """
+    if "iconify_css" in text or ".i-mc-platform\\:" in text:
+        return text
+    css = "<style>\n" + iconify_css() + "\n</style>\n"
+    # 放到 </head> 之前；没有 head 时直接前置
+    idx = text.lower().find("</head>")
+    if idx != -1:
+        return text[:idx] + css + text[idx:]
+    return css + text
+
+
 def load_template(name: str | None = None) -> str:
     """读取并返回模板文本。非法名称 / 文件缺失时回退到默认模板。
 
+    会自动注入官方同款 ``iconify`` CSS mask 规则，使模板可以直接用
+    ``<span class="iconify i-mc-platform:xxx">`` 渲染平台 logo。
     结果会被缓存；修改模板文件后重载插件即可生效。
     """
     template_id = resolve_template_name(name)
@@ -147,6 +181,7 @@ def load_template(name: str | None = None) -> str:
     # 基本校验：必须含有 Jinja2 变量引用，避免把纯静态文件当成模板
     if "{{" not in text and "{%" not in text:
         return _fallback(template_id, "不含任何 Jinja2 变量")
+    text = _inject_iconify_css(text)
     _cache[template_id] = text
     return text
 
@@ -176,6 +211,29 @@ def clear_cache() -> None:
     _cache.clear()
 
 
+# 各模板的 logo 配色策略：
+#   "brand"  -> 各平台品牌色（浅色模板，默认）
+#   "white"  -> 全白（深色模板）
+#   "ink"    -> 深墨色（报纸模板）
+TEMPLATE_ICON_THEME: dict[str, str] = {
+    "classic": "brand",
+    "neon": "white",
+    "compact": "ink",
+    "glass": "brand",
+}
+_THEME_COLORS = {"white": "#ffffff", "ink": "#20201e"}
+
+
+def _icon_color_for(template_id: str, slug: str) -> str | None:
+    """返回该模板下指定平台应使用的 logo 颜色；None 表示用品牌色。"""
+    theme = TEMPLATE_ICON_THEME.get(template_id, "brand")
+    return _THEME_COLORS.get(theme)
+
+
+def _brand_color(slug: str) -> str:
+    return PLATFORM_COLORS.get(slug, "#334155")
+
+
 def build_template_data(
     game: GameInfo,
     template_name: str | None = None,
@@ -184,11 +242,28 @@ def build_template_data(
     """把 GameInfo 转成 Jinja2 可渲染的纯字典。
 
     除了 ``game`` 之外，还注入 ``template_name``（当前模板名）与
-    ``quote_chars``（评测节选字数），方便模板在标题/页脚里展示。
+    ``quote_chars``（评测节选字数）。每个平台额外注入 ``icon``
+    （来自 Metacritic 官方 ``mc-platform`` 图标集的内联 SVG data URI，
+    已按模板主题配色），模板可直接 ``<img src="{{ p.icon }}">`` 使用；
+    顶层 ``platform_icons`` 是 ``{slug: data_uri}`` 全量映射。
     """
+    template_id = resolve_template_name(template_name)
+
+    def icon_for(slug: str) -> str:
+        return platform_icon(slug, _icon_color_for(template_id, slug))
+
+    # 官方 iconify class 方式的颜色：通过父元素 color 控制
+    theme_color = _icon_color_for(template_id, "")
+
     return {
-        "template_name": resolve_template_name(template_name),
+        "template_name": template_id,
         "quote_chars": int(quote_chars),
+        # 官方同款 CSS（一般已由 load_template 自动注入；显式暴露供自定义模板用）
+        "iconify_css": iconify_css(),
+        # logo 颜色（None 表示各平台用品牌色），供 span 的 style="color:..." 使用
+        "icon_color": theme_color,
+        # 全量映射：{slug: data_uri}，供仍想用 <img> 的模板取用
+        "platform_icons": {s: icon_for(s) for s in platform_icon_map()},
         "game": {
             "title": game.title,
             "slug": game.slug,
@@ -206,6 +281,9 @@ def build_template_data(
                 {
                     "name": p.name,
                     "slug": p.slug,
+                    "icon": icon_for(p.slug),  # 兼容：<img> 用的 data URI
+                    "icon_class": platform_iconify_class(p.slug),  # 官方 iconify class
+                    "icon_color": theme_color or _brand_color(p.slug),
                     "critic_score": p.critic_score,
                     "critic_review_count": p.critic_review_count,
                     "critic_sentiment": p.critic_sentiment,
