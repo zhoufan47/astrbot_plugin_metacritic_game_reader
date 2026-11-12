@@ -293,7 +293,7 @@
       {% for p in game.platforms %}
       <div class="platform glass">
         <div class="p-head">
-          <div class="p-name">{% if p.icon_class %}<span class="p-icon iconify {{ p.icon_class }}" style="color:{{ p.icon_color }}"></span>{% endif %}{{ p.name }}<span class="badge">PLATFORM</span></div>
+          <div class="p-name"><span class="p-icon iconify {{ p.icon_class }}" style="color:{{ p.icon_color }}"></span>{% endif %}{{ p.name }}</div>
         </div>
 
         <div class="stats">
