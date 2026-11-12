@@ -210,3 +210,8 @@ __marimo__/
 .research/
 .test_*.py
 /.idea/*
+
+# plugin local data / test artifacts
+.data/
+.research*/
+.test_*.py

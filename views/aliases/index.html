@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>别名管理</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="head">
+        <div class="head-text">
+          <h1 id="title">游戏别名库</h1>
+          <p class="sub" id="subtitle">
+            查询时优先命中这里的别名；LLM 识别成功后会自动写入。
+          </p>
+        </div>
+        <div class="head-actions">
+          <button class="btn ghost" id="btn-refresh" title="刷新">刷新</button>
+          <button class="btn ghost" id="btn-import" title="把内置别名表导入库中">
+            导入内置
+          </button>
+          <button class="btn danger-ghost" id="btn-clear" title="清空别名">清空</button>
+        </div>
+      </header>
+
+      <section class="stats" id="stats"></section>
+
+      <section class="toolbar">
+        <input
+          id="search"
+          class="input"
+          type="search"
+          placeholder="搜索别名或官方名…"
+          autocomplete="off"
+        />
+        <select id="source-filter" class="input select" title="按来源筛选">
+          <option value="">全部来源</option>
+          <option value="user">用户添加</option>
+          <option value="llm">LLM 自动</option>
+          <option value="builtin">内置表</option>
+        </select>
+        <button class="btn" id="btn-add">＋ 新增别名</button>
+      </section>
+
+      <form class="add-form" id="add-form" hidden>
+        <div class="field">
+          <label for="new-alias">别名（用户可能输入的说法）</label>
+          <input id="new-alias" class="input" placeholder="例如：老头环" required />
+        </div>
+        <div class="field">
+          <label for="new-title">官方英文名（Metacritic 上的标题）</label>
+          <input id="new-title" class="input" placeholder="例如：Elden Ring" required />
+        </div>
+        <div class="field field-actions">
+          <button class="btn primary" type="submit" id="btn-save">保存</button>
+          <button class="btn ghost" type="button" id="btn-cancel">取消</button>
+        </div>
+      </form>
+
+      <section class="table-wrap">
+        <table class="table" id="table">
+          <thead>
+            <tr>
+              <th class="col-alias">别名</th>
+              <th class="col-title">官方名</th>
+              <th class="col-source">来源</th>
+              <th class="col-hits">命中</th>
+              <th class="col-time">更新时间</th>
+              <th class="col-ops">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+        <div class="empty" id="empty" hidden>
+          <p>还没有别名。</p>
+          <p class="hint">
+            点击「新增别名」手动添加，或使用 <code>/评分别名 添加 老头环 Elden Ring</code>。
+          </p>
+        </div>
+        <div class="loading" id="loading">加载中…</div>
+      </section>
+
+      <footer class="foot">
+        <span id="path"></span>
+        <span id="count"></span>
+      </footer>
+    </div>
+
+    <div class="toast" id="toast" hidden></div>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

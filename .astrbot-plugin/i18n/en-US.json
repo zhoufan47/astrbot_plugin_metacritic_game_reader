@@ -1,0 +1,8 @@
+{
+  "views": {
+    "aliases": {
+      "title": "Game Alias Library",
+      "description": "Aliases here are matched first; successful LLM resolutions are saved automatically."
+    }
+  }
+}

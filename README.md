@@ -7,10 +7,15 @@
 
 ## 功能
 
-- 🧠 **智能识别游戏名**：优先调用 AstrBot 会话所用的大模型，把中文俗称、别名、
-  缩写、错拼规范化成 Metacritic 的英文官方名（如「老头环」→ `Elden Ring`、
-  「黑神话悟空」→ `Black Myth: Wukong`）；模型不可用时自动降级到内置中文别名表
-  和英文原名搜索。
+- 🧠 **智能识别游戏名（自学习）**：识别顺序为 **用户别名库 → 内置别名表 → LLM**。
+  首次遇到未知说法时调用会话大模型把它规范化成 Metacritic 英文官方名
+  （如「老头环」→ `Elden Ring`、「那个打牌的肉鸽」→ `Balatro`），**识别成功后
+  自动写入别名库**，之后同样的输入直接查库、不再消耗 LLM 调用。模型不可用时
+  自动降级到内置中文别名表和英文原名搜索。
+- 📚 **别名库可管理**：支持命令和 WebUI 两种方式增删查别名；别名持久化到
+  `data/plugin_data/<插件名>/aliases.json`，不随插件更新丢失。
+- 🖥️ **WebUI 管理界面**：插件详情页内置「别名管理」可视化视图，可搜索、筛来源、
+  新增、删除、清空、一键导入内置别名表，并适配 WebUI 亮/暗主题。
 - 🏷️ **官方平台 Logo**：完全沿用 Metacritic 页面的渲染方式 —— 通过站点自带的
   Iconify `mc-platform` 私有图标集，用 `<span class="iconify i-mc-platform:pclogo-bold">`
   配合 **CSS mask + `background-color:currentColor`** 上色。共 18 个 logo
@@ -24,13 +29,14 @@
   - 用户评分（User Score）与用户评分数量
   - 前 5 篇媒体评测的分数、媒体名、日期与前 100 字节选
 - 🖼️ **多套 HTML 模板**：模板是 `templates/` 目录下的独立 `.html` 文件，内置
-  3 套风格（经典卡片 / 霓虹赛博 / 报纸杂志），可自由切换，也可放入自定义模板。
-  封面图（cardImage）+ 主视觉图（mainImage）+ 全部评分信息组装成卡片，通过
-  AstrBot `html_render`（t2i）渲染为图片发送。渲染服务不可用时自动降级为纯文本。
+  4 套风格（经典卡片 / 霓虹赛博 / 报纸杂志 / 通透玻璃），可自由切换，
+  也可放入自定义模板。封面图（cardImage）+ 主视觉图（mainImage）+ 全部评分
+  信息组装成卡片，通过 AstrBot `html_render`（t2i）渲染为图片发送。
+  渲染服务不可用时自动降级为纯文本。
 - 🎨 **模板切换**：WebUI 配置项或 `/评分模板` 命令，支持仅当前会话生效、
   全局持久化生效、以及重置回 WebUI 配置。
-- ⚙️ **可配置**：模板、是否启用 LLM 识别、评测条数、节选字数、请求超时，见
-  `_conf_schema.json`，可在 AstrBot WebUI 插件配置页直接修改。
+- ⚙️ **可配置**：模板、自动保存别名、是否启用 LLM 识别、评测条数、节选字数、
+  请求超时，见 `_conf_schema.json`，可在 AstrBot WebUI 插件配置页直接修改。
 
 ## 使用
 
@@ -70,6 +76,28 @@
 `HTML + Jinja2`，可用变量详见 [templates/README.md](templates/README.md)。
 模板名只允许字母、数字、下划线、连字符；损坏的模板会自动回退到 `classic`。
 
+### 管理别名库
+
+识别顺序是 **用户别名库 → 内置别名表 → LLM**，LLM 识别成功后会自动写库。
+别名持久化在 `data/plugin_data/astrbot_plugin_metacritic_game_reader/aliases.json`。
+
+命令方式：
+
+```
+/评分别名                    列出别名与统计
+/评分别名 添加 老头环 Elden Ring   新增/更新别名
+/评分别名 删除 老头环             删除别名
+/评分别名 搜索 环                按别名或官方名模糊搜索
+/评分别名 清空                 清空全部（可加 user / llm / builtin 只清某来源）
+/评分别名 导入内置               把内置别名表导入库中，便于统一管理
+/mc别名 列表                   （别名）同上
+```
+
+WebUI 方式：AstrBot WebUI → 插件 → 本插件卡片 → 详情页 → **别名管理**视图，
+可搜索、按来源筛选、新增、删除、清空、一键导入内置别名表，自动适配亮/暗主题。
+
+> 关闭配置项 `auto_save_alias` 可禁用自动入库，此时只能手动添加别名。
+
 ## 安装
 
 1. 把本目录放到 AstrBot 的 `data/plugins/` 下（目录名建议保持
@@ -83,8 +111,9 @@
 
 | 配置项 | 默认值 | 说明 |
 | --- | --- | --- |
-| `template` | `classic` | 渲染模板 ID（可选 `classic` / `neon` / `compact` 或自定义模板） |
-| `use_llm` | `true` | 用会话大模型智能识别游戏名；关闭则只用内置别名表/英文原名 |
+| `template` | `classic` | 渲染模板 ID（可选 `classic` / `neon` / `compact` / `glass` 或自定义模板） |
+| `auto_save_alias` | `true` | 识别成功后自动把「输入 → 官方名」写入别名库 |
+| `use_llm` | `true` | 用会话大模型智能识别游戏名；关闭则只用别名库/内置表/英文原名 |
 | `max_reviews` | `5` | 每个平台展示的媒体评测篇数（1–10） |
 | `review_quote_chars` | `100` | 每篇评测节选字数（「前 100 字」） |
 | `request_timeout` | `20` | 单次 HTTP 请求超时（秒） |
@@ -130,8 +159,9 @@ Metacritic 官网是 Nuxt 应用，页面数据来自其公开 JSON 后端
 ## 文件结构
 
 ```
-main.py                插件入口：指令、智能识别、模板选择、t2i 渲染与消息发送
+main.py                插件入口：指令、智能识别、别名管理、Web API、t2i 渲染
 metacritic_client.py   Metacritic 异步数据抓取客户端
+alias_store.py         别名库（JSON 持久化、增删改查、模糊匹配）
 platform_icons.py      Metacritic 官方 mc-platform 平台 logo（18 个内联 SVG + 配色）
 template.py            HTML 模板加载器（发现/读取/校验）与模板数据组装
 templates/             独立的 .html 模板文件
@@ -140,10 +170,20 @@ templates/             独立的 .html 模板文件
   ├─ compact.html      报纸杂志
   ├─ glass.html        通透玻璃
   └─ README.md         自定义模板与可用变量说明
+views/aliases/         WebUI「别名管理」可视化视图
+  ├─ index.html        页面结构
+  ├─ app.js            bridge 通信与交互逻辑
+  └─ style.css         亮/暗主题样式
+.astrbot-plugin/i18n/  视图标题/描述的国际化文案
 _conf_schema.json      AstrBot 插件配置 Schema
-metadata.yaml          插件元数据
+metadata.yaml          插件元数据（含 views 声明）
 requirements.txt       依赖声明
 ```
+
+### 别名数据位置
+
+别名库写入 `data/plugin_data/astrbot_plugin_metacritic_game_reader/aliases.json`，
+与插件目录分离，插件更新/重装不会丢失。如需备份或迁移，复制该文件即可。
 
 ## 许可
 
