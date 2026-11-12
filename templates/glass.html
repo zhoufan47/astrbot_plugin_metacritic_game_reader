@@ -257,7 +257,6 @@
 
     <div class="topbar glass">
       <div class="brand">METACRITIC <span class="dot">◆</span> 游戏评分</div>
-      <div class="tmpl">{{ template_name }} · GLASS</div>
     </div>
 
     <!-- 主视觉玻璃面板 -->
@@ -268,7 +267,6 @@
       <div class="cover-ph">No Cover</div>
       {% endif %}
       <div class="hero-text">
-        <div class="kicker">MULTI-PLATFORM SCORE REPORT</div>
         <div class="title">{{ game.title }}</div>
         <div class="meta">
           {% if game.release_date %}<span>发行 {{ game.release_date }}</span>{% endif %}
@@ -331,7 +329,7 @@
         </div>
 
         <div class="reviews">
-          <div class="rv-title">前 {{ p.reviews | length }} 篇媒体评测 · 节选 {{ quote_chars }} 字</div>
+          <div class="rv-title">前 {{ p.reviews | length }} 篇媒体评测</div>
           {% if p.reviews %}
             {% for r in p.reviews %}
             <div class="review">
@@ -358,7 +356,7 @@
     {% endif %}
 
     <div class="footer glass">
-      <span>数据来源：<strong>Metacritic</strong>（metacritic.com）</span>
+      <span>数据来源：<strong>Metacritic</strong></span>
       <span>{{ game.source_url }}</span>
     </div>
 

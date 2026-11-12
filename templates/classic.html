@@ -268,7 +268,7 @@
         </div>
 
         <div class="reviews">
-          <div class="stat-label" style="margin-bottom:6px;">前 {{ p.reviews | length }} 篇媒体评测（节选 {{ quote_chars }} 字）</div>
+          <div class="stat-label" style="margin-bottom:6px;">前 {{ p.reviews | length }} 篇媒体评测</div>
           {% if p.reviews %}
             {% for r in p.reviews %}
             <div class="review">
