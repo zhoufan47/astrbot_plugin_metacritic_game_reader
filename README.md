@@ -29,7 +29,7 @@
   - 用户评分（User Score）与用户评分数量
   - 前 5 篇媒体评测的分数、媒体名、日期与前 100 字节选
 - 🖼️ **多套 HTML 模板**：模板是 `templates/` 目录下的独立 `.html` 文件，内置
-  4 套风格（经典卡片 / 霓虹赛博 / 报纸杂志 / 通透玻璃），可自由切换，
+  5 套风格（经典卡片 / 霓虹赛博 / 报纸杂志 / 通透玻璃 / 深色分层玻璃），可自由切换，
   也可放入自定义模板。封面图（cardImage）+ 主视觉图（mainImage）+ 全部评分
   信息组装成卡片，通过 AstrBot `html_render`（t2i）渲染为图片发送。
   渲染服务不可用时自动降级为纯文本。
@@ -70,6 +70,7 @@
 | `neon` | 深色赛博/霓虹风，青紫配色，科技感标签 |
 | `compact` | 报纸杂志风，双栏紧凑排版，信息密度最高 |
 | `glass` | 通透玻璃风，半透明悬浮面板，背景模糊、微亮边缘与轻柔阴影 |
+| `darkglass` | 深色分层玻璃，渐变网格背景、冷白文字、Lucide 图标与紫色点缀 |
 
 **自定义模板**：把一个 `xxx.html` 放进插件的 `templates/` 目录，重载插件后即可
 用 `/评分模板 xxx` 或（把它加进配置下拉框后）在 WebUI 里选择。模板使用
@@ -111,7 +112,7 @@ WebUI 方式：AstrBot WebUI → 插件 → 本插件卡片 → 详情页 → **
 
 | 配置项 | 默认值 | 说明 |
 | --- | --- | --- |
-| `template` | `classic` | 渲染模板 ID（可选 `classic` / `neon` / `compact` / `glass` 或自定义模板） |
+| `template` | `classic` | 渲染模板 ID（可选 `classic` / `neon` / `compact` / `glass` / `darkglass` 或自定义模板） |
 | `auto_save_alias` | `true` | 识别成功后自动把「输入 → 官方名」写入别名库 |
 | `use_llm` | `true` | 用会话大模型智能识别游戏名；关闭则只用别名库/内置表/英文原名 |
 | `max_reviews` | `5` | 每个平台展示的媒体评测篇数（1–10） |
@@ -169,6 +170,7 @@ templates/             独立的 .html 模板文件
   ├─ neon.html         霓虹赛博
   ├─ compact.html      报纸杂志
   ├─ glass.html        通透玻璃
+  ├─ darkglass.html    深色分层玻璃
   └─ README.md         自定义模板与可用变量说明
 views/aliases/         WebUI「别名管理」可视化视图
   ├─ index.html        页面结构

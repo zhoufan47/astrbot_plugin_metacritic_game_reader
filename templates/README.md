@@ -12,6 +12,7 @@ AstrBot WebUI 的插件配置里选择，或用 `/评分模板 my_style` 切换�
 | `neon` | 深色赛博/霓虹风，青紫配色，等宽科技感标签 |
 | `compact` | 报纸杂志风，双栏紧凑排版，竖排封面，信息密度最高 |
 | `glass` | 通透玻璃风，半透明悬浮面板 + backdrop-filter 背景模糊 + 微亮描边与轻柔阴影 |
+| `darkglass` | 深色分层玻璃，渐变网格背景、冷白文字、Lucide 图标、紫色单色点缀 |
 
 ## 可用数据（Jinja2 变量）
 
@@ -32,7 +33,7 @@ AstrBot WebUI 的插件配置里选择，或用 `/评分模板 my_style` 切换�
 {% endif %}
 ```
 
-配色：浅色模板用各平台品牌色，`neon` 用纯白，`compact` 用深墨色。
+配色：浅色模板用各平台品牌色，`neon` 与 `darkglass` 用纯白，`compact` 用深墨色。
 `p.icon`（已配色的 data URI）仍保留，方便想用 `<img>` 的自定义模板。
 未知平台时 `p.icon_class` 为空字符串，用 `{% if %}` 包裹即可降级。
 

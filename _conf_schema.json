@@ -3,13 +3,14 @@
     "description": "渲染图片所使用的 HTML 模板（可在 templates/ 目录放入自定义 .html 模板）",
     "type": "string",
     "default": "classic",
-    "options": ["classic", "neon", "compact", "glass"],
-    "labels": ["经典卡片（默认）", "霓虹赛博", "报纸杂志", "通透玻璃"],
+    "options": ["classic", "neon", "compact", "glass", "darkglass"],
+    "labels": ["经典卡片（默认）", "霓虹赛博", "报纸杂志", "通透玻璃", "深色分层玻璃"],
     "subtitles": [
       "浅色分区卡片，蓝色主视觉 + 封面",
       "深色科技风，青紫霓虹配色",
       "双栏紧凑排版，信息密度最高",
-      "半透明悬浮面板，背景模糊、微亮边缘与轻柔阴影"
+      "半透明悬浮面板，背景模糊、微亮边缘与轻柔阴影",
+      "深色渐变网格、双层玻璃、Lucide 图标与紫色点缀"
     ],
     "hint": "也可用 /评分模板 <名称> 临时切换；自定义模板放入插件 templates/ 目录后重载插件即可选择。"
   },

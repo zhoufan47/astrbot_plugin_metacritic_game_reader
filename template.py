@@ -46,6 +46,7 @@ BUILTIN_LABELS: dict[str, str] = {
     "neon": "霓虹赛博 · 深色科技风，青紫配色",
     "compact": "报纸杂志 · 双栏紧凑排版，信息密度高",
     "glass": "通透玻璃 · 半透明悬浮面板，背景模糊与微亮边缘",
+    "darkglass": "深色分层玻璃 · 渐变网格背景，冷白文字与紫色点缀",
 }
 
 DEFAULT_TEMPLATE = "classic"
@@ -220,6 +221,7 @@ TEMPLATE_ICON_THEME: dict[str, str] = {
     "neon": "white",
     "compact": "ink",
     "glass": "brand",
+    "darkglass": "white",
 }
 _THEME_COLORS = {"white": "#ffffff", "ink": "#20201e"}
 
