@@ -7,6 +7,9 @@
   --primary: #3c96ca;
   --primary-text: #ffffff;
   --danger: #e5484d;
+  /* 实心危险按钮专用：白字对比度 ≥ 4.5:1（--danger 本身偏亮，只用于描边/文字） */
+  --danger-strong: #c92a30;
+  --danger-strong-text: #ffffff;
   --shadow: 0 1px 3px rgba(16, 24, 40, 0.08), 0 1px 2px rgba(16, 24, 40, 0.04);
   --radius: 12px;
 }
@@ -20,11 +23,18 @@
   --primary: #4aa3d6;
   --primary-text: #0b1017;
   --danger: #ff6b6f;
+  --danger-strong: #ff6b6f;
+  --danger-strong-text: #200a0b;
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 * {
   box-sizing: border-box;
+}
+
+/* display:flex 的元素会盖掉 hidden 的默认 display:none，统一兜底 */
+[hidden] {
+  display: none !important;
 }
 
 html,
@@ -124,6 +134,12 @@ body {
 
 .btn.danger-ghost:hover {
   border-color: var(--danger);
+}
+
+.btn.danger {
+  background: var(--danger-strong);
+  border-color: var(--danger-strong);
+  color: var(--danger-strong-text);
 }
 
 .btn.tiny {
@@ -371,6 +387,61 @@ body {
   color: var(--muted);
   font-size: 12px;
   word-break: break-all;
+}
+
+/* ---------- 页内确认对话框 ----------
+   Dashboard 插件视图 iframe 沙箱不含 allow-modals，
+   window.confirm/prompt 被静默禁用，确认交互一律用页内 UI。 */
+.dialog-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 14, 20, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 60;
+}
+
+.dialog {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.28);
+  padding: 20px;
+  width: min(420px, 100%);
+}
+
+.dialog-title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.dialog-message {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 13px;
+  word-break: break-word;
+}
+
+.dialog-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.dialog-options .btn.selected {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  color: var(--text);
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 /* ---------- Toast ---------- */

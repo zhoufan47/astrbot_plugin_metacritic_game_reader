@@ -206,7 +206,7 @@ views/aliases/         WebUI「别名管理」可视化视图
 _conf_schema.json      AstrBot 插件配置 Schema
 metadata.yaml          插件元数据（含 views 声明）
 requirements.txt       依赖声明
-tests/                 离线单元测试（LLM 翻译逻辑，python -m pytest tests/）
+tests/                 测试：LLM 翻译单测（pytest）+ 别名视图沙箱 E2E（playwright）
 ```
 
 ### 别名数据位置

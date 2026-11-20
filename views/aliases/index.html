@@ -87,6 +87,23 @@
       </footer>
     </div>
 
+    <div class="dialog-mask" id="dialog" hidden>
+      <div
+        class="dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dialog-title"
+      >
+        <h2 class="dialog-title" id="dialog-title"></h2>
+        <p class="dialog-message" id="dialog-message"></p>
+        <div class="dialog-options" id="dialog-options" hidden></div>
+        <div class="dialog-actions">
+          <button class="btn ghost" id="dialog-cancel" type="button">取消</button>
+          <button class="btn primary" id="dialog-ok" type="button">确定</button>
+        </div>
+      </div>
+    </div>
+
     <div class="toast" id="toast" hidden></div>
 
     <script type="module" src="./app.js"></script>

@@ -8,6 +8,10 @@
  *
  * 后端返回普通 JSON 时 Promise 解析为完整对象；
  * 返回 {status:"error"} 或 HTTP 失败时 Promise reject 为 Error。
+ *
+ * 确认交互一律用页内对话框（askDialog）：Dashboard 的插件视图 iframe
+ * 沙箱为 allow-scripts allow-forms allow-downloads，不含 allow-modals，
+ * window.confirm / window.prompt 会被浏览器静默禁用（恒返回 false/null）。
  */
 
 const bridge = window.AstrBotPluginView;
@@ -46,6 +50,12 @@ const el = {
   btnImport: document.getElementById("btn-import"),
   btnSave: document.getElementById("btn-save"),
   btnCancel: document.getElementById("btn-cancel"),
+  dialog: document.getElementById("dialog"),
+  dialogTitle: document.getElementById("dialog-title"),
+  dialogMessage: document.getElementById("dialog-message"),
+  dialogOptions: document.getElementById("dialog-options"),
+  dialogOk: document.getElementById("dialog-ok"),
+  dialogCancel: document.getElementById("dialog-cancel"),
 };
 
 let toastTimer = 0;
@@ -59,6 +69,82 @@ function toast(message, isError = false) {
   toastTimer = setTimeout(() => {
     el.toast.hidden = true;
   }, 2600);
+}
+
+/**
+ * 页内确认对话框（替代被 iframe 沙箱禁用的 window.confirm/prompt）。
+ *
+ * @param {object} opts
+ *   title/message 标题与正文；okText 确认按钮文案；danger 红色确认按钮；
+ *   options 可选 [{value, label}]：提供时渲染选项按钮，Promise 解析为选中值，
+ *   取消解析为 null；不提供时确认解析为 true、取消解析为 false。
+ *   点击遮罩 / 取消按钮 / Esc 均视为取消。
+ */
+function askDialog({
+  title,
+  message,
+  okText = "确定",
+  danger = false,
+  options = null,
+}) {
+  return new Promise((resolve) => {
+    el.dialogTitle.textContent = title;
+    el.dialogMessage.textContent = message;
+    el.dialogOk.textContent = okText;
+    el.dialogOk.classList.toggle("danger", danger);
+    el.dialogOk.classList.toggle("primary", !danger);
+
+    const hasOptions = Array.isArray(options) && options.length > 0;
+    let selected = hasOptions ? options[0].value : null;
+    if (hasOptions) {
+      el.dialogOptions.innerHTML = options
+        .map(
+          (o) =>
+            `<button type="button" class="btn tiny${
+              o.value === selected ? " selected" : ""
+            }" data-value="${escapeHtml(o.value)}">${escapeHtml(o.label)}</button>`,
+        )
+        .join("");
+      el.dialogOptions.hidden = false;
+    } else {
+      el.dialogOptions.innerHTML = "";
+      el.dialogOptions.hidden = true;
+    }
+
+    const finish = (result) => {
+      el.dialog.hidden = true;
+      el.dialogOk.removeEventListener("click", onOk);
+      el.dialogCancel.removeEventListener("click", onCancel);
+      el.dialog.removeEventListener("click", onMask);
+      el.dialogOptions.removeEventListener("click", onPick);
+      document.removeEventListener("keydown", onKey);
+      resolve(result);
+    };
+    const onOk = () => finish(hasOptions ? selected : true);
+    const onCancel = () => finish(hasOptions ? null : false);
+    const onMask = (event) => {
+      if (event.target === el.dialog) onCancel();
+    };
+    const onPick = (event) => {
+      const btn = event.target.closest("button[data-value]");
+      if (!btn) return;
+      selected = btn.dataset.value;
+      for (const b of el.dialogOptions.querySelectorAll("button")) {
+        b.classList.toggle("selected", b === btn);
+      }
+    };
+    const onKey = (event) => {
+      if (event.key === "Escape") onCancel();
+    };
+
+    el.dialogOk.addEventListener("click", onOk);
+    el.dialogCancel.addEventListener("click", onCancel);
+    el.dialog.addEventListener("click", onMask);
+    el.dialogOptions.addEventListener("click", onPick);
+    document.addEventListener("keydown", onKey);
+    el.dialog.hidden = false;
+    el.dialogOk.focus();
+  });
 }
 
 /** 转义文本，避免把用户输入当 HTML 插入。 */
@@ -192,7 +278,13 @@ async function saveAlias(alias, title) {
 
 /** 删除别名（bridge 无 DELETE，走 POST）。 */
 async function deleteAlias(alias) {
-  if (!window.confirm(`确定删除别名「${alias}」？`)) return;
+  const ok = await askDialog({
+    title: "删除别名",
+    message: `确定删除别名「${alias}」？`,
+    okText: "删除",
+    danger: true,
+  });
+  if (!ok) return;
   try {
     const result = await bridge.apiPost("aliases/delete", { alias });
     const removed = Number(result?.deleted ?? 0);
@@ -205,29 +297,25 @@ async function deleteAlias(alias) {
 
 /** 清空别名（可选按来源）。 */
 async function clearAliases() {
-  const which = window.prompt(
-    "要清空哪些别名？输入：全部 / user / llm / builtin",
-    "全部",
-  );
-  if (which === null) return;
-  const value = which.trim();
-  if (!value) return;
-  const source =
-    value === "全部" || value.toLowerCase() === "all"
-      ? null
-      : ["user", "llm", "builtin"].includes(value.toLowerCase())
-        ? value.toLowerCase()
-        : "invalid";
-
-  if (source === "invalid") {
-    toast("只支持：全部 / user / llm / builtin", true);
-    return;
-  }
-  const label = source ? `来源「${source}」的` : "全部";
-  if (!window.confirm(`确定清空${label}别名？此操作不可撤销。`)) return;
+  const source = await askDialog({
+    title: "清空别名",
+    message: "选择要清空的来源。此操作不可撤销。",
+    okText: "清空",
+    danger: true,
+    options: [
+      { value: "all", label: "全部" },
+      { value: "user", label: "用户添加" },
+      { value: "llm", label: "LLM 自动" },
+      { value: "builtin", label: "内置表" },
+    ],
+  });
+  if (!source) return;
 
   try {
-    const result = await bridge.apiPost("aliases/clear", source ? { source } : {});
+    const result = await bridge.apiPost(
+      "aliases/clear",
+      source === "all" ? {} : { source },
+    );
     toast(`已清空 ${result?.cleared ?? 0} 条`);
     await load();
   } catch (error) {
@@ -237,7 +325,12 @@ async function clearAliases() {
 
 /** 把内置别名表导入库中。 */
 async function importBuiltin() {
-  if (!window.confirm("把内置别名表导入库中？已存在的同名别名会被跳过。")) return;
+  const ok = await askDialog({
+    title: "导入内置别名",
+    message: "把内置别名表导入库中？已存在的同名别名会被跳过。",
+    okText: "导入",
+  });
+  if (!ok) return;
   try {
     const result = await bridge.apiPost("aliases/import_builtin", {});
     toast(`已导入 ${result?.added ?? 0} 条`);
