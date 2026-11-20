@@ -12,9 +12,12 @@
     2. Metacritic 搜索 -> 取最匹配的 game-title。
     3. 按 PC > PS5 > NS2 > XSX 优先级抓取多平台：媒体评分、媒体评测数量、
        用户评分、前 5 篇媒体评测的分数与前 100 字，并取封面图 / 主视觉图。
-    4. 从 templates/ 目录加载选定的独立 HTML 模板，组装数据后通过 AstrBot
+    4. 可选 LLM 翻译：评测只翻译第一段（节省 token）、简介翻译全文，
+       全部文本合并成一次 LLM 调用；翻译用的 Provider 可在 WebUI 配置里
+       选择 AstrBot 已配置的聊天模型，留空则用会话当前模型。
+    5. 从 templates/ 目录加载选定的独立 HTML 模板，组装数据后通过 AstrBot
        ``html_render``（t2i）渲染为图片发送。
-    5. 模板可切换：WebUI 配置项 + ``/评分模板 <名称>`` 命令（支持会话级/全局），
+    6. 模板可切换：WebUI 配置项 + ``/评分模板 <名称>`` 命令（支持会话级/全局），
        也可直接把自定义 .html 放进 templates/ 目录。
 
 别名库：
@@ -57,10 +60,12 @@ try:  # AstrBot 以包形式导入：data.plugins.<name>.main
         default_store_dir,
     )
     from .metacritic_client import (
+        DESCRIPTION_CHARS,
         GameInfo,
         GameNotFoundError,
         MetacriticClient,
         MetacriticError,
+        truncate,
     )
     from .template import (
         BUILTIN_LABELS,
@@ -72,6 +77,7 @@ try:  # AstrBot 以包形式导入：data.plugins.<name>.main
         load_template,
         resolve_template_name,
     )
+    from .translator import llm_translate, resolve_provider_id
 except ImportError:  # 本地直接运行 / sys.path 兜底
     from alias_store import (  # type: ignore[no-redef]
         SOURCE_BUILTIN,
@@ -81,10 +87,12 @@ except ImportError:  # 本地直接运行 / sys.path 兜底
         default_store_dir,
     )
     from metacritic_client import (  # type: ignore[no-redef]
+        DESCRIPTION_CHARS,
         GameInfo,
         GameNotFoundError,
         MetacriticClient,
         MetacriticError,
+        truncate,
     )
     from template import (  # type: ignore[no-redef]
         BUILTIN_LABELS,
@@ -96,6 +104,7 @@ except ImportError:  # 本地直接运行 / sys.path 兜底
         load_template,
         resolve_template_name,
     )
+    from translator import llm_translate, resolve_provider_id  # type: ignore[no-redef]
 
 # 中文 / 俗称 -> Metacritic 英文官方名（LLM 不可用时的降级词典）
 ALIASES: dict[str, str] = {
@@ -188,8 +197,8 @@ register = _register_star or _identity_decorator
 @register(
     "astrbot_plugin_metacritic_game_reader",
     "zhoufan",
-    "Metacritic 游戏评分查询：智能识别游戏名（自学习别名库），抓取 PC/PS5/NS2/XSX 多平台评分，用官方 iconify CSS mask 渲染平台 Logo，支持多套可切换 HTML 模板渲染成图片",
-    "1.3.0",
+    "Metacritic 游戏评分查询：智能识别游戏名（自学习别名库），抓取 PC/PS5/NS2/XSX 多平台评分，用官方 iconify CSS mask 渲染平台 Logo，支持多套可切换 HTML 模板渲染成图片，可选 LLM 翻译评测第一段与游戏简介（识别/翻译模型均可自选）",
+    "1.4.0",
 )
 class MetacriticGameReader(Star):
     """Metacritic 游戏评分查询插件。
@@ -380,22 +389,20 @@ class MetacriticGameReader(Star):
             logger.warning("[metacritic] 保存别名失败: %s", e)
 
     async def _llm_normalize(self, raw: str, umo: str | None = None) -> str | None:
-        """用 AstrBot 当前会话的聊天模型把 XX 规范化成英文官方名。
+        """用 LLM 把 XX 规范化成英文官方名。
 
-        v4.5.7+ 使用 ``context.llm_generate``；任何异常都安全降级，
-        不会因为没配模型 / 模型报错而让指令失败。
+        模型提供商由 ``recognize_provider`` 配置指定（WebUI 下拉选择），
+        留空则用当前会话的聊天模型。v4.5.7+ 使用 ``context.llm_generate``；
+        任何异常都安全降级，不会因为没配模型 / 模型报错而让指令失败。
         """
         if not self.cfg.get("use_llm", True):
             return None
         try:
-            provider_id = None
-            try:
-                provider_id = await self.context.get_current_chat_provider_id(umo=umo)
-            except Exception:  # noqa: BLE001
-                try:
-                    provider_id = await self.context.get_current_chat_provider_id()
-                except Exception:  # noqa: BLE001
-                    pass
+            provider_id = await resolve_provider_id(
+                self.context,
+                str(self.cfg.get("recognize_provider") or ""),
+                umo=umo,
+            )
             if not provider_id:
                 return None
 
@@ -487,6 +494,54 @@ class MetacriticGameReader(Star):
         return raw, "原文"
 
     # ------------------------------------------------------------------ #
+    # LLM 翻译（评测仅第一段 / 简介全文，Provider 可配置）
+    # ------------------------------------------------------------------ #
+    def _translation_enabled(self) -> bool:
+        return bool(self.cfg.get("translate_reviews")) or bool(
+            self.cfg.get("translate_description")
+        )
+
+    async def _translate_game(self, game: GameInfo, umo: str | None) -> None:
+        """按配置把评测节选 / 游戏简介翻译成简体中文，结果直接写回 game。
+
+        - 评测：只翻译每篇的第一段（节省 token），译文按 review_quote_chars
+          截断展示，与英文原文的排版保持一致；
+        - 简介：翻译完整简介，译文按原展示长度截断；
+        - 全部文本合并成一次 LLM 调用；任何失败都保留英文原文。
+        """
+        translate_reviews = bool(self.cfg.get("translate_reviews", False))
+        translate_desc = bool(self.cfg.get("translate_description", False))
+        if not (translate_reviews or translate_desc):
+            return
+
+        reviews = (
+            [r for p in game.platforms for r in p.reviews] if translate_reviews else []
+        )
+        texts = [r.quote_first_para for r in reviews if r.quote_first_para]
+        if translate_desc and game.description_full:
+            texts.append(game.description_full)
+        if not texts:
+            return
+
+        provider_id = str(self.cfg.get("translate_provider") or "").strip() or None
+        mapping = await llm_translate(
+            self.context, texts, provider_id=provider_id, umo=umo
+        )
+        if not mapping:
+            return
+
+        quote_chars = int(self.cfg.get("review_quote_chars", 100) or 100)
+        for r in reviews:
+            translated = mapping.get(r.quote_first_para)
+            if translated:
+                r.quote = truncate(translated, quote_chars)
+        if translate_desc and game.description_full:
+            translated = mapping.get(game.description_full)
+            if translated:
+                game.description = truncate(translated, DESCRIPTION_CHARS)
+        logger.info("[metacritic] LLM 翻译完成：%s 段文本", len(mapping))
+
+    # ------------------------------------------------------------------ #
     # 命令处理
     # ------------------------------------------------------------------ #
     async def _handle(self, event: AstrMessageEvent, raw: str):
@@ -540,6 +595,11 @@ class MetacriticGameReader(Star):
             # 这样错拼 / 非标准写法下次可以直接命中（LLM 结果已在上一步写入）
             if method in ("原文", "LLM") and game.title:
                 self._remember_alias(raw, game.title, SOURCE_LLM if method == "LLM" else SOURCE_USER)
+
+            # LLM 翻译（可选）：评测仅第一段 + 游戏简介，失败保留英文原文
+            if self._translation_enabled():
+                yield event.plain_result("🌐 正在通过 LLM 翻译评测与简介…")
+                await self._translate_game(game, umo)
 
             # 解析本次使用的模板 -> 组装 HTML -> 交给 AstrBot t2i 渲染
             # load_template 内部对损坏/缺失模板会自动回退，保证永远有模板可用

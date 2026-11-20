@@ -8,10 +8,11 @@
 ## 功能
 
 - 🧠 **智能识别游戏名（自学习）**：识别顺序为 **用户别名库 → 内置别名表 → LLM**。
-  首次遇到未知说法时调用会话大模型把它规范化成 Metacritic 英文官方名
+  首次遇到未知说法时调用大模型把它规范化成 Metacritic 英文官方名
   （如「老头环」→ `Elden Ring`、「那个打牌的肉鸽」→ `Balatro`），**识别成功后
   自动写入别名库**，之后同样的输入直接查库、不再消耗 LLM 调用。模型不可用时
-  自动降级到内置中文别名表和英文原名搜索。
+  自动降级到内置中文别名表和英文原名搜索。识别用的模型提供商可在 WebUI
+  自由下拉选择（`recognize_provider`），留空则用会话当前模型。
 - 📚 **别名库可管理**：支持命令和 WebUI 两种方式增删查别名；别名持久化到
   `data/plugin_data/<插件名>/aliases.json`，不随插件更新丢失。
 - 🖥️ **WebUI 管理界面**：插件详情页内置「别名管理」可视化视图，可搜索、筛来源、
@@ -35,8 +36,14 @@
   渲染服务不可用时自动降级为纯文本。
 - 🎨 **模板切换**：WebUI 配置项或 `/评分模板` 命令，支持仅当前会话生效、
   全局持久化生效、以及重置回 WebUI 配置。
-- ⚙️ **可配置**：模板、自动保存别名、是否启用 LLM 识别、评测条数、节选字数、
-  请求超时，见 `_conf_schema.json`，可在 AstrBot WebUI 插件配置页直接修改。
+- 🌐 **LLM 翻译（可选）**：可分别开启「评测翻译」与「简介翻译」，把英文内容
+  翻译成简体中文。**评测只翻译每篇的第一段**，避免翻译整篇浪费 token；
+  所有待翻译文本（评测第一段 + 简介）合并成**一次 LLM 调用**，相同文本自动去重。
+  翻译用的模型提供商可在 WebUI 配置里直接下拉选择 AstrBot 已配置的聊天模型，
+  留空则使用当前会话正在使用的模型。翻译失败时自动保留英文原文，不影响出图。
+- ⚙️ **可配置**：模板、自动保存别名、是否启用 LLM 识别、评测/简介翻译开关、
+  识别/翻译各自的模型提供商、评测条数、节选字数、请求超时，见
+  `_conf_schema.json`，可在 AstrBot WebUI 插件配置页直接修改。
 
 ## 使用
 
@@ -99,6 +106,20 @@ WebUI 方式：AstrBot WebUI → 插件 → 本插件卡片 → 详情页 → **
 
 > 关闭配置项 `auto_save_alias` 可禁用自动入库，此时只能手动添加别名。
 
+### 启用 LLM 翻译
+
+在 AstrBot WebUI → 插件 → 本插件配置里：
+
+1. 打开 `translate_reviews`（翻译评测，仅每篇第一段）和/或
+   `translate_description`（翻译游戏简介）；
+2. 在 `translate_provider` 下拉框里选择一个已配置的聊天模型提供商；
+   留空则使用当前会话正在使用的聊天模型。
+
+之后 `/评分` 出图前会先把英文评测节选与简介翻译成简体中文。所有文本合并成
+一次 LLM 调用（相同文本去重），评测译文按 `review_quote_chars` 截断展示，
+与英文原文排版一致。模型未配置、请求失败或输出不合约定时自动保留英文原文，
+不影响评分查询本身。
+
 ## 安装
 
 1. 把本目录放到 AstrBot 的 `data/plugins/` 下（目录名建议保持
@@ -114,7 +135,11 @@ WebUI 方式：AstrBot WebUI → 插件 → 本插件卡片 → 详情页 → **
 | --- | --- | --- |
 | `template` | `classic` | 渲染模板 ID（可选 `classic` / `neon` / `compact` / `glass` / `darkglass` 或自定义模板） |
 | `auto_save_alias` | `true` | 识别成功后自动把「输入 → 官方名」写入别名库 |
-| `use_llm` | `true` | 用会话大模型智能识别游戏名；关闭则只用别名库/内置表/英文原名 |
+| `use_llm` | `true` | 用大模型智能识别游戏名；关闭则只用别名库/内置表/英文原名 |
+| `recognize_provider` | 空 | 游戏名识别使用的模型提供商（WebUI 下拉选择已配置的聊天模型；空 = 会话当前模型） |
+| `translate_reviews` | `false` | LLM 翻译媒体评测（仅每篇第一段，译文按节选字数截断展示） |
+| `translate_description` | `false` | LLM 翻译游戏简介 |
+| `translate_provider` | 空 | 翻译使用的模型提供商（WebUI 下拉选择已配置的聊天模型；空 = 会话当前模型） |
 | `max_reviews` | `5` | 每个平台展示的媒体评测篇数（1–10） |
 | `review_quote_chars` | `100` | 每篇评测节选字数（「前 100 字」） |
 | `request_timeout` | `20` | 单次 HTTP 请求超时（秒） |
@@ -162,6 +187,7 @@ Metacritic 官网是 Nuxt 应用，页面数据来自其公开 JSON 后端
 ```
 main.py                插件入口：指令、智能识别、别名管理、Web API、t2i 渲染
 metacritic_client.py   Metacritic 异步数据抓取客户端
+translator.py          LLM 批量翻译（评测第一段 / 简介，Provider 可配置，安全降级）
 alias_store.py         别名库（JSON 持久化、增删改查、模糊匹配）
 platform_icons.py      Metacritic 官方 mc-platform 平台 logo（18 个内联 SVG + 配色）
 template.py            HTML 模板加载器（发现/读取/校验）与模板数据组装
@@ -180,6 +206,7 @@ views/aliases/         WebUI「别名管理」可视化视图
 _conf_schema.json      AstrBot 插件配置 Schema
 metadata.yaml          插件元数据（含 views 声明）
 requirements.txt       依赖声明
+tests/                 离线单元测试（LLM 翻译逻辑，python -m pytest tests/）
 ```
 
 ### 别名数据位置

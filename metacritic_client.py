@@ -68,6 +68,7 @@ class Review:
     publication: str
     quote: str  # 已截断到前 N 个字符
     date: str = ""
+    quote_first_para: str = ""  # 评测第一段完整文本（供 LLM 翻译，避免翻译全文浪费 token）
 
     @property
     def score_text(self) -> str:
@@ -107,7 +108,8 @@ class GameInfo:
     publisher: str = ""
     cover_url: str = ""  # 封面图（cardImage，竖版）
     hero_url: str = ""  # 主视觉图（mainImage）
-    description: str = ""
+    description: str = ""  # 展示用简介（已截断）
+    description_full: str = ""  # 完整简介（供 LLM 翻译）
     platforms: list[PlatformScore] = field(default_factory=list)
     source_url: str = ""
 
@@ -147,6 +149,25 @@ def truncate(text: str, limit: int = 100) -> str:
     if len(s) <= limit:
         return s
     return s[:limit].rstrip() + "…"
+
+
+def first_paragraph(text: str) -> str:
+    """提取正文第一段：去 HTML 标签后按空行分段，取第一个非空段。
+
+    供 LLM 翻译使用——只翻译第一段，避免翻译整篇评测浪费 token。
+    单个换行视为段内软换行（合并为空格），不会把句子从中间切断。
+    """
+    text = re.sub(r"<[^>]+>", " ", text or "")
+    text = html.unescape(text)
+    for para in re.split(r"(?:\r?\n\s*){2,}", text):
+        para = re.sub(r"\s+", " ", para).strip()
+        if para:
+            return para
+    return ""
+
+
+# 展示用简介的最大长度（翻译后也按此长度截断，保持模板排版一致）
+DESCRIPTION_CHARS = 160
 
 
 def image_url(image: dict | None) -> str:
@@ -378,12 +399,14 @@ class MetacriticClient:
         for r in raw_reviews[: self.max_reviews]:
             if not isinstance(r, dict):
                 continue
+            raw_quote = str(r.get("quote") or "")
             ps.reviews.append(
                 Review(
                     score=_as_int(r.get("score")),
                     publication=str(r.get("publicationName") or r.get("author") or "Unknown"),
-                    quote=truncate(str(r.get("quote") or ""), self.quote_chars),
+                    quote=truncate(raw_quote, self.quote_chars),
                     date=str(r.get("date") or ""),
+                    quote_first_para=first_paragraph(raw_quote),
                 )
             )
         return ps
@@ -440,7 +463,8 @@ class MetacriticClient:
             publisher=company_of("publisher"),
             cover_url=cover,
             hero_url=hero,
-            description=truncate(str(item.get("description") or ""), 160),
+            description=truncate(str(item.get("description") or ""), DESCRIPTION_CHARS),
+            description_full=_clean_text(str(item.get("description") or "")),
             platforms=platforms,
             source_url=f"https://www.metacritic.com/game/{slug}/",
         )

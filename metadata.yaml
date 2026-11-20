@@ -1,8 +1,8 @@
 name: astrbot_plugin_metacritic_game_reader
 display_name: Metacritic 游戏评分
-desc: 智能识别游戏名称（带自学习别名库），从 Metacritic 获取 PC/PS5/NS2/XSX 多平台媒体评分、用户评分与媒体评测，渲染成图片发送。
+desc: 智能识别游戏名称（带自学习别名库），从 Metacritic 获取 PC/PS5/NS2/XSX 多平台媒体评分、用户评分与媒体评测，渲染成图片发送；可选 LLM 翻译评测第一段与游戏简介（识别/翻译模型均可自选）。
 short_desc: /评分 或 /mc 查 Metacritic 游戏评分
-version: v1.3.0
+version: v1.4.0
 author: 棒棒糖
 repo: https://github.com/zhoufan47/astrbot_plugin_metacritic_game_reader
 support_platforms:
